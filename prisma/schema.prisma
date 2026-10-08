@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model batches {
+  batch_id    Int       @id @default(autoincrement())
+  medicine_id Int
+  quantity    Int
+  expire_date DateTime  @db.Date
+  medicines   medicines @relation(fields: [medicine_id], references: [medicine_id], onUpdate: NoAction, map: "fk_batches_medicine")
+}
+
+model medicines {
+  medicine_id        Int                  @id @default(autoincrement())
+  name               String               @unique @db.VarChar(100)
+  batches            batches[]
+  prescription_items prescription_items[]
+}
+
+model patients {
+  patient_id    Int             @id @default(autoincrement())
+  name          String          @db.VarChar(100)
+  prescriptions prescriptions[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model prescription_items {
+  prescription_item_id Int           @id @default(autoincrement())
+  prescription_id      Int
+  medicine_id          Int
+  quantity             Int
+  medicines            medicines     @relation(fields: [medicine_id], references: [medicine_id], onUpdate: NoAction, map: "fk_prescription_items_medicine")
+  prescriptions        prescriptions @relation(fields: [prescription_id], references: [prescription_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_prescription_items_prescription")
+
+  @@unique([prescription_id, medicine_id], map: "un_prescription_medicine")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model prescriptions {
+  prescription_id    Int                  @id @default(autoincrement())
+  patient_id         Int
+  status             String               @default("pending") @db.VarChar(20)
+  created_at         DateTime             @default(now()) @db.Timestamp(6)
+  prescription_items prescription_items[]
+  patients           patients             @relation(fields: [patient_id], references: [patient_id], onUpdate: NoAction, map: "fk_prescriptions_patient")
+}
+
+
+model users {
+  user_id  Int    @id @default(autoincrement())
+  email    String @unique @db.VarChar(255)
+  password String @db.VarChar(255)
+}
